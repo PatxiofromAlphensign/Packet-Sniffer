@@ -14,7 +14,6 @@ import protocols
 
 i = ' ' * 4  # Basic indentation level
 
-
 class PacketSniffer(object):
     def __init__(self, interface: str):
         self.interface = interface
