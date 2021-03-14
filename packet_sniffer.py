@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # https://github.com/EONRaider/Packet-Sniffer
 
 __author__ = 'EONRaider @ keybase.io/eonraider'
@@ -7,8 +7,7 @@ import abc
 import argparse
 import time
 from itertools import count
-import struct, fcntl 
-from socket import ntohs, socket, PF_PACKET, SOCK_RAW, AF_INET, SOCK_STREAM, inet_ntoa
+from socket import ntohs, socket, PF_PACKET, SOCK_RAW
 
 import protocols
 
@@ -31,36 +30,24 @@ class PacketSniffer(object):
         del self.protocol_queue[1:]
 
     def execute(self):
-        self.sock = sock = socket(PF_PACKET, SOCK_RAW, ntohs(0x0003))
-        if self.interface is not None:
-            sock.bind((self.interface, 0))
-        for self.packet_num in count(1):
-            start: int = 0
-            raw_packet = sock.recv(140)
-            for proto in self.protocol_queue:
-                proto_class = getattr(protocols, proto)
-                end: int = start + proto_class.header_len
-                protocol = proto_class(raw_packet[start:end])
-                setattr(self, proto.lower(), proto_class)
-                if protocol.encapsulated_proto is None:
-                    break
-                self.protocol_queue.append(protocol.encapsulated_proto)
-                start = end
-            return
-            self.data = raw_packet[end:]
-            self.__notify_all(self)
+        with socket(PF_PACKET, SOCK_RAW, ntohs(0x0003)) as sock:
+            if self.interface is not None:
+                sock.bind((self.interface, 0))
+            for self.packet_num in count(1):
+                raw_packet = sock.recv(2048)
+                start: int = 0
+                for proto in self.protocol_queue:
+                    proto_class = getattr(protocols, proto)
+                    end: int = start + proto_class.header_len
+                    protocol = proto_class(raw_packet[start:end])
+                    setattr(self, proto.lower(), protocol)
+                    if protocol.encapsulated_proto is None:
+                        break
+                    self.protocol_queue.append(protocol.encapsulated_proto)
+                    start = end
+                self.data = raw_packet[end:]
+                self.__notify_all(self)
 
-    def _execute(self):
-        self.execute()
-        sb = struct.pack("256s", bytes(self.sock.getsockname()[0], encoding="utf8"))
-        addr = inet_ntoa(fcntl.ioctl(self.sock.fileno(), 0x8915, sb)[20:24])
-
-        with socket(AF_INET, SOCK_STREAM) as s:
-            s.bind((addr, 8006))
-            s.listen()
-            conn, addr = s.accept()
-            self.data = conn.recv(1024) + self.sock.recv(1024)
-           
 
 class OutputMethod(abc.ABC):
     """Interface for the implementation of all classes responsible for
@@ -154,14 +141,20 @@ def sniff(interface: str, displaydata: bool):
     try:
         print('\n[>>>] Sniffer initialized. Waiting for incoming packets. '
               'Press Ctrl-C to abort...\n')
-
-        packet_sniffer._execute()
-        print(packet_sniffer.data)
-
+        packet_sniffer.execute()
     except KeyboardInterrupt:
         raise SystemExit('Aborting packet capture...')
 
 
 if __name__ == '__main__':
-    sniff(interface="enp7s0",
-    displaydata=False)
+    parser = argparse.ArgumentParser(description='A pure-Python network packet '
+                                                 'sniffer.')
+    parser.add_argument('-i', '--interface', type=str, default=None,
+                        help='Interface from which packets will be captured '
+                             '(captures from all available interfaces by '
+                             'default).')
+    parser.add_argument('-d', '--displaydata', action='store_true',
+                        help='Output packet data during capture.')
+    cli_args = parser.parse_args()
+    sniff(interface=cli_args.interface,
+          displaydata=cli_args.displaydata)
