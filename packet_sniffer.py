@@ -8,7 +8,7 @@ import argparse
 import time
 from itertools import count
 import struct, fcntl 
-from socket import ntohs, socket, PF_PACKET, SOCK_RAW, AF_INET, SOCK_STREAM, inet_ntoa
+from socket import ntohs, socket, PF_PACKET, SOCK_RAW, AF_INET, SOCK_STREAM, inet_ntoa, create_connection, SOL_SOCKET, SO_BROADCAST
 
 import protocols
 
@@ -45,28 +45,38 @@ class PacketSniffer(object):
                     break
                 self.protocol_queue.append(protocol.encapsulated_proto)
                 start = end
-            return
+
             self.data = raw_packet[end:]
+            return
             self.__notify_all(self)
 
-    def _execute(self):
+    def _experiment(self):
         self.execute()
         sb = struct.pack("256s", bytes(self.sock.getsockname()[0], encoding="utf8"))
         addr = inet_ntoa(fcntl.ioctl(self.sock.fileno(), 0x8915, sb)[20:24])
-
         with socket(AF_INET, SOCK_STREAM) as s:
-            s.bind((addr, 8006))
-            s.listen()
-            conn, addr = s.accept()
-            self.data = conn.recv(1024) + self.sock.recv(1024)
-           
-
+            s.bind((addr, 1000))
+            s.listen(5)
+            sock = create_connection((addr, 1000)) 
+            sock.sendall(b"inti")
+            sockopt = (sock.getsockopt(SOL_SOCKET, SO_BROADCAST))
+            message = sock.recv(1024)
+            print(message)
+            while 1: 
+                # message += sock.recv(1024) 
+                conn, (addr, port) = s.accept()
+                print(message)
+                data = conn.recv(12)
+                conn.sendall(data)
+                print("test data sent")
+                self.data = conn.recv(1024) + self.sock.recv(1024)
+        
 class OutputMethod(abc.ABC):
     """Interface for the implementation of all classes responsible for
     further processing and/or output of the information gathered by
     the PacketSniffer class (referenced as 'subject')."""
 
-    def __init__(self, subject):
+    def __init__(self, subject): 
         subject.register(self)
 
     @abc.abstractmethod
@@ -154,7 +164,7 @@ def sniff(interface: str, displaydata: bool):
         print('\n[>>>] Sniffer initialized. Waiting for incoming packets. '
               'Press Ctrl-C to abort...\n')
 
-        packet_sniffer._execute()
+        packet_sniffer._experiment()
         print(packet_sniffer.data)
 
     except KeyboardInterrupt:
@@ -163,4 +173,4 @@ def sniff(interface: str, displaydata: bool):
 
 if __name__ == '__main__':
     sniff(interface="enp7s0",
-    displaydata=False)
+    displaydata=True)
