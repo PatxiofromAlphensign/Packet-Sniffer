@@ -52,9 +52,7 @@ void iter_server(union  iter_server_status *i) {
 	memcpy(i, names, sizeof(i));
 
 	for(int idx=0; i->arr[idx];i++) {
-		//((uint16_t*)i->arr)[idx] = *names[idx]; //segFault on assignment
 		i->arr[idx] = *names[idx]; //segFault on assignment
-		//if(names[idx]) i->arr[idx] = &names[idx] ; //segFault
 	}
 }
 int main() {
