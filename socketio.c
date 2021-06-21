@@ -14,8 +14,8 @@
 // TODO make homogenous type struct for iterating server meta_data
 
 struct server_status {
-	uint16_t *test, *addr, *port, *fuck;
-	uint16_t arr[4];
+	char *test, *addr, *port, *fuck;
+	char arr[4];
 };
 
 union iter_server_status {
@@ -45,9 +45,16 @@ void get(int sockfd){ // iteraction
 		if(!strncmp("exit", buff, 4)) break ;
 	}
 }
-
-void iter_server(union  iter_server_status *i) {
-	uint16_t *names[] = {(uint16_t*)"",(uint16_t*)"localhost", (uint16_t*)"8080"};
+void iter_server_struct(struct server_status *ss) {
+	char *names[] = {"fuck","localhost","8080"};
+	for(int idx=0; names[idx]!=NULL; idx++) {
+		if(idx<sizeof(ss)) {
+			((char**)ss)[idx] = names[idx];
+		}
+	} 
+}
+void iter_server_union(union  iter_server_status *i) {
+	uint16_t *names[] = {(uint16_t*)"fuck",(uint16_t*)"localhost", (uint16_t*)"8080"};
 	union  iter_server_status* iter = (union iter_server_status*)malloc(sizeof(union iter_server_status)); 
 	memcpy(i, names, sizeof(i));
 
@@ -55,7 +62,16 @@ void iter_server(union  iter_server_status *i) {
 		i->arr[idx] = *names[idx]; //segFault on assignment
 	}
 }
+
+void config_grpah() {
+// config grpah: create arr relations & edges for the network config {overkil: i don't know }
+
+	
+	
+}
+
 int main() {
+
 	struct sockaddr_in cli, serveraddr;
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	//get(sockfd);
@@ -70,10 +86,10 @@ int main() {
 
 	/* printf("trying to bind to %d ", inet_addr("192.168.29.167")); */
 
-	if (bind(sockfd, (SA*)&cli, sizeof(cli)))  {
-		printf("failed\n");
-		exit(0);
-	}
+/* 	if (bind(sockfd, (SA*)&cli, sizeof(cli)))  { */
+/* 		printf("failed\n"); */
+/* 		exit(0); */
+/* 	} */
 
 	/* if(listen(sockfd, 5)!=0) {printf("listen falied"); exit(0);} */
 
@@ -82,8 +98,9 @@ int main() {
 	// break : setup_server_status
 	union iter_server_status isv, isv_prime;
 	struct server_status ss;
-	iter_server(&isv);
-	printf("%d",(char)isv.arr[1]);
+	//iter_server_union(&isv);
+	iter_server_struct(&ss);
+	printf("%s",(ss.addr));
 	//get(connfd);
 	return 0;
 } 
