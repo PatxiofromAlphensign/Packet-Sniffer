@@ -24,14 +24,15 @@ char **allocate(char **buffer, char **buffer_calloc) { // somehow adding one ext
 
 
 void assign(char **buffer, char **buffer_calloc) {
-	allocate(buffer,buffer_calloc);
+	char *buf = *buffer_calloc ;
+	allocate(buffer,&buf);
 	int i =0;
-	/* for(;;) { */
-	/* 	if((*buffer_calloc)[i]==NULL) continue; //do stuff; */
-	/* 	else break; */
-	/* 	i++; */
-	/* } */
-	*buffer_calloc[100] = "tes"; //segfault here
+	for(;;) {
+		if((buf)[i]==NULL) printf("test "); //do stuff;
+		else break;
+		i++;
+	}
+	buf[0] = 100; //segfault here : fixed
 
 }
 
@@ -39,7 +40,6 @@ void setup_config(struct sockaddr_in *localaddr) {
 	localaddr->sin_family = AF_INET;
 	localaddr->sin_addr.s_addr = inet_addr(ADDR);
 	localaddr->sin_port = htons(PORT);  // Any local port will do
-
 }
 
 void create() {
@@ -56,7 +56,7 @@ void create() {
 
 	int len = sizeof(localaddr);
 
-	if(listen(sockfd, 5)!=0) printf("listen failed");
+	//if(listen(sockfd, 5)!=0) printf("listen failed");
 	int connfd = accept(sockfd, (struct sockaddr*)&sockfd, &len);
 	if(connfd<0) printf("hell yeah : accept failed!!!!!");
 
@@ -64,6 +64,11 @@ void create() {
 	write(connfd, buffer, 1000);
 
 	printf("\n%s ",buffer);
+}
+struct hostent *getSock_obj(struct sockaddr_in cli){ 
+	struct in_addr addr;
+	inet_aton("1.1.1.1", &addr);
+	return gethostbyaddr((const char*)&addr, sizeof(addr), cli.sin_family);
 }
 
 int main() {
@@ -77,6 +82,8 @@ int main() {
 	int *a;
 	
 	assign(&buffer,&buffer_calloc);
+	
+	//buffer_calloc[10] = 100;
 	
 	//while(addr[i]!=NULL) {
 		i++;
