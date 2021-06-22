@@ -100,7 +100,6 @@ int main() {
 	struct server_status ss;
 	//iter_server_union(&isv);
 	iter_server_struct(&ss);
-	printf("%s",(ss.addr));
 	//get(connfd);
 	return 0;
 } 
