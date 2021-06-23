@@ -23,7 +23,7 @@ char **allocate(char **buffer, char **buffer_calloc) { // somehow adding one ext
 }
 
 
-void assign(char **buffer, char **buffer_calloc) {
+void assign(char **buffer, char **buffer_calloc, char **a) {
 	char *buf = *buffer_calloc ;
 	allocate(buffer,&buf);
 	int i =0;
@@ -79,9 +79,9 @@ int main() {
 	struct hostent *hostp;
 
 	char *buffer, *buffer_calloc;
-	int *a;
-	
-	assign(&buffer,&buffer_calloc);
+	char *a;
+
+	assign(&buffer,&buffer_calloc, &a);
 	
 	//buffer_calloc[10] = 100;
 	
